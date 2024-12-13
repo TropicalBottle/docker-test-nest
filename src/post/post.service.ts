@@ -1,16 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Post } from './post.entity';
-import { postsMock } from './postMock';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PostService {
-  posts: Post[] = postsMock;
+  constructor(
+    @InjectRepository(Post)
+    private readonly posts: Repository<Post>,
+  ) {}
 
-  findAll(): Post[] {
-    return this.posts;
+  findAll(): Promise<Post[]> {
+    return this.posts.find();
   }
 
-  findOne(id: string): Post {
-    return this.posts.find((post: Post) => post.id === Number(id));
+  async findOne(id: string): Promise<Post> {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    const post = await this.posts.findOne({ where: { id } });
+    if (!post) {
+      throw new NotFoundException(`Post #${id} not found`);
+    }
+    return post;
   }
 }
